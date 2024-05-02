@@ -1,10 +1,13 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/aws/aws-cdk-go/awscdk/v2"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsapigateway"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsdynamodb"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awslambda"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awswafv2"
 
 	// "github.com/aws/aws-cdk-go/awscdk/v2/awssqs"
 	"github.com/aws/constructs-go/constructs/v10"
@@ -53,7 +56,52 @@ func NewGoAwsStack(scope constructs.Construct, id string, props *GoAwsStackProps
 
 	integration := awsapigateway.NewLambdaIntegration(myFunction, nil)
 
-	//Define the routes
+	webAcl := awswafv2.NewCfnWebACL(stack, jsii.String("MyWebACL"), &awswafv2.CfnWebACLProps{
+    Scope: jsii.String("REGIONAL"),
+    DefaultAction: &awswafv2.CfnWebACL_DefaultActionProperty{
+        Allow: &awswafv2.CfnWebACL_AllowActionProperty{},
+    },
+    VisibilityConfig: &awswafv2.CfnWebACL_VisibilityConfigProperty{
+        SampledRequestsEnabled: jsii.Bool(true),
+        CloudWatchMetricsEnabled: jsii.Bool(true),
+        MetricName: jsii.String("webACL"),
+    },
+    Rules: &[]*awswafv2.CfnWebACL_RuleProperty{
+        {
+            Name: jsii.String("RateLimitRule"),
+            Priority: jsii.Number(1),
+            Action: &awswafv2.CfnWebACL_RuleActionProperty{
+                Block: &awswafv2.CfnWebACL_BlockActionProperty{}, 
+            },
+            Statement: &awswafv2.CfnWebACL_StatementProperty{
+                RateBasedStatement: &awswafv2.CfnWebACL_RateBasedStatementProperty{
+                    Limit: jsii.Number(100), 
+                    AggregateKeyType: jsii.String("IP"), 
+										EvaluationWindowSec: jsii.Number(600),
+                },
+            },
+            VisibilityConfig: &awswafv2.CfnWebACL_VisibilityConfigProperty{
+                SampledRequestsEnabled: jsii.Bool(true),
+                CloudWatchMetricsEnabled: jsii.Bool(true),
+                MetricName: jsii.String("RateLimitRule"),
+            },
+        },
+    },
+	})
+
+	partition := "aws" 
+	region := *stack.Region()
+	restApiId := *api.RestApiId()
+	stageName := "prod" 
+	
+	restApiArn := fmt.Sprintf("arn:%s:apigateway:%s::/restapis/%s/stages/%s", partition, region, restApiId, stageName)
+
+	
+	awswafv2.NewCfnWebACLAssociation(stack, jsii.String("WebAclApiGatewayAssociation"), &awswafv2.CfnWebACLAssociationProps{
+			ResourceArn: jsii.String(restApiArn), 
+			WebAclArn:   webAcl.AttrArn(),
+	})
+
 	registerResource := api.Root().AddResource(jsii.String("register"), nil)
 	registerResource.AddMethod(jsii.String("POST"), integration, nil)
 
@@ -66,7 +114,6 @@ func NewGoAwsStack(scope constructs.Construct, id string, props *GoAwsStackProps
 	protectedResource.AddMethod(jsii.String("GET"), integration, nil)
 	//If we want to get id from request
 	//registerResource := api.Root().AddResource(jsii.String("register/{id}"), nil)
-
 
 	return stack
 }
