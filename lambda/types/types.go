@@ -1,56 +1,11 @@
 package types
 
-import (
-	"time"
-
-	"github.com/golang-jwt/jwt/v5"
-	"golang.org/x/crypto/bcrypt"
-)
-
 type RegisterUser struct {
-	Username string `json:"username"`
+	Email string `json:"email"`
 	Password string `json:"password"`
 }
 
 type User struct {
-	Username string `json:"username"`
+	Email string `json:"email"`
 	PasswordHash string `json:"password"`
-}
-
-func NewUser(registerUser RegisterUser) (User, error){
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(registerUser.Password), 10)
-	if err != nil {
-		return User{}, err
-	}
-
-	return User{
-		Username: registerUser.Username,
-		PasswordHash: string(hashedPassword),
-	}, nil
-}
-
-func ValidatePassowrd(hashedPassword, password string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
-	return err == nil
-}
-
-func CreateToken(user User) string {
-	now := time.Now()
-	validUntil := now.Add(time.Hour * 1).Unix()
-
-	claims := jwt.MapClaims{
-		"username": user.Username,
-		"expires": validUntil,
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims, nil)
-	secret := "secret" //TO CHANGE TO .ENV
-
-	tokenString, err := token.SignedString([]byte(secret))
-
-	if err != nil {
-		return ""
-	}
-
-	return tokenString
 }

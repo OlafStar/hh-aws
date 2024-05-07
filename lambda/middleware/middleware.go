@@ -1,90 +1,59 @@
 package middleware
 
 import (
-	"fmt"
+	"lambda-func/jwt"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/golang-jwt/jwt/v5"
 )
-
-//excrating the request headers
-//excrating our claims
-//validating everything
-
-func ValidateJWTMiddleware(next func(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error)) func(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	return func(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-		//extract the headers
-		tokenString := extractTokenFromHeaders(request.Headers)
-
-		if tokenString == "" {
-			return events.APIGatewayProxyResponse{
-				Body: "Missing auth token",
-				StatusCode: http.StatusUnauthorized,
-			}, nil
-		}
-
-		//we need to parse token
-		claims, err := parseToken(tokenString)
-
-		if err != nil {
-			return events.APIGatewayProxyResponse{
-				Body: "Unauthorized",
-				StatusCode: http.StatusUnauthorized,
-			}, err
-		}
-
-		expires := int64(claims["expires"].(float64))
-
-		if time.Now().Unix() > expires {
-			return events.APIGatewayProxyResponse{
-				Body: "Token expired",
-				StatusCode: http.StatusUnauthorized,
-			}, nil
-		}
-
-		return next(request)
-	}
-}
 
 func extractTokenFromHeaders(headers map[string]string) string {
 	authHeader, ok := headers["Authorization"]
-
 	if !ok {
 		return ""
 	}
-
 	splitToken := strings.Split(authHeader, "Bearer ")
-
 	if len(splitToken) != 2 {
 		return ""
 	}
-	
 	return splitToken[1]
 }
 
-func parseToken(tokenString string) (jwt.MapClaims, error) {
-	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
-		secret := "secret" //TODO FIX IN .ENV
+func ValidateJWTMiddleware(role jwt.Role) func(next func(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error)) func(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	return func(next func(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error)) func(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+		return func(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+			tokenString := extractTokenFromHeaders(request.Headers)
+			if tokenString == "" {
+				return events.APIGatewayProxyResponse{
+					Body:       "Missing auth token",
+					StatusCode: http.StatusUnauthorized,
+				}, nil
+			}
 
-		return []byte(secret), nil
-	})
+			claims, err := jwt.ParseToken(tokenString, role)
+			if err != nil {
+				return events.APIGatewayProxyResponse{
+					Body:       "Unauthorized",
+					StatusCode: http.StatusUnauthorized,
+				}, err
+			}
 
-	if err != nil {
-		return nil, fmt.Errorf("unauthorized")
+			expires := int64(claims["exp"].(float64))
+			if time.Now().Unix() > expires {
+				return events.APIGatewayProxyResponse{
+					Body:       "Token expired",
+					StatusCode: http.StatusUnauthorized,
+				}, nil
+			}
+
+			return next(request)
+		}
 	}
-
-	if !token.Valid {
-		return nil, fmt.Errorf("token is not valid - unauthorized")
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
-
-	if !ok {
-		return nil, fmt.Errorf("claims of unauthorized type")
-	}
-
-	return claims, nil
 }
+
+// Middleware instances for each role
+var ValidateUserJWT = ValidateJWTMiddleware(jwt.RoleUser)
+var ValidateCosmetologistJWT = ValidateJWTMiddleware(jwt.RoleCosmetologist)
+var ValidateAdminJWT = ValidateJWTMiddleware(jwt.RoleAdmin)

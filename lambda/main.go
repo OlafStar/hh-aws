@@ -24,8 +24,18 @@ func main() {
 			return myApp.APIHandler.RegisterUserHandler(request)
 		case "/login":
 			return myApp.APIHandler.LoginUser(request)
-		case "/protected":
-			return middleware.ValidateJWTMiddleware(ProtectedRequest)(request)
+		case "/admin/cosmetologist/register":
+			return middleware.ValidateAdminJWT(myApp.APIHandler.RegisterCosmetologistHandler)(request)
+		case "/admin/login":
+			return myApp.APIHandler.LoginAdminUser(request)
+		case "/cosmetologist/login":
+			return myApp.APIHandler.LoginCosmetologistUser(request)
+		case "/protected-user":
+			return middleware.ValidateUserJWT(ProtectedRequest)(request)
+		case "/protected-cosmetologist":
+			return middleware.ValidateCosmetologistJWT(ProtectedRequest)(request)
+		case "/protected-admin":
+			return middleware.ValidateAdminJWT(ProtectedRequest)(request)
 		default:
 			return events.APIGatewayProxyResponse{
 				Body: "Not found",
