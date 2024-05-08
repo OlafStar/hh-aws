@@ -25,7 +25,7 @@ func (api APIHandler) RegisterUserHandler(request events.APIGatewayProxyRequest)
 		return utils.CreateAPIGatewayProxyErrorResponse(http.StatusBadRequest, fmt.Sprintf("Invalid request - %s", err.Error())), err
 	}
 
-	userExists, err := api.dbStore.DoesUserExists(body.Email)
+	userExists, err := api.dbStore.DoesUserExist(body.Email, "email")
 
 	if err != nil {
 		

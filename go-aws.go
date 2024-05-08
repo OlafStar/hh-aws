@@ -4,7 +4,7 @@ import (
 	"github.com/aws/aws-cdk-go/awscdk/v2"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsapigateway"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsdynamodb"
-	"github.com/aws/aws-cdk-go/awscdk/v2/awselasticache"
+	// "github.com/aws/aws-cdk-go/awscdk/v2/awselasticache"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awslambda"
 
 	// "github.com/aws/aws-cdk-go/awscdk/v2/awswafv2"
@@ -85,15 +85,10 @@ func NewGoAwsStack(scope constructs.Construct, id string, props *GoAwsStackProps
 		TableName: jsii.String("productsTable"),
 	})
 
-	// cluster := awselasticache.NewCfnCacheCluster(stack, jsii.String("MyElastiCacheCluster"), &awselasticache.CfnCacheClusterProps{
-	// 	CacheNodeType: jsii.String("cache.t2.micro"),
-	// 	Engine:        jsii.String("redis"),
-	// 	NumCacheNodes: jsii.Number(1),
+	// awselasticache.NewCfnServerlessCache(stack, jsii.String("myElasticache"), &awselasticache.CfnServerlessCacheProps{
+	// 	Engine: jsii.String("redis"),
+	// 	ServerlessCacheName: jsii.String("myServerlessCache"),
 	// })
-	awselasticache.NewCfnServerlessCache(stack, jsii.String("myElasticache"), &awselasticache.CfnServerlessCacheProps{
-		Engine: jsii.String("redis"),
-		ServerlessCacheName: jsii.String("myServerlessCache"),
-	})
 
 	myFunction := awslambda.NewFunction(stack, jsii.String("myLambdaFunction"), &awslambda.FunctionProps{
 		Runtime: awslambda.Runtime_PROVIDED_AL2023(),
@@ -175,7 +170,13 @@ func NewGoAwsStack(scope constructs.Construct, id string, props *GoAwsStackProps
 
 	adminResource := apiRoot.AddResource(jsii.String("admin"), nil)
 
+	adminClientsResource := adminResource.AddResource(jsii.String("clients"), nil)
+	adminClientsResource.AddMethod(jsii.String("GET"), integration, nil)
+
 	adminCosmetologistResource := adminResource.AddResource(jsii.String("cosmetologist"), nil)
+
+	adminCosmetologistsResource := adminResource.AddResource(jsii.String("cosmetologists"), nil)
+	adminCosmetologistsResource.AddMethod(jsii.String("GET"), integration, nil)
 
 	adminProductsResource := adminResource.AddResource(jsii.String("products"), nil)
 	
@@ -184,6 +185,9 @@ func NewGoAwsStack(scope constructs.Construct, id string, props *GoAwsStackProps
 
 	registerCosmetologistResource := adminCosmetologistResource.AddResource(jsii.String("register"), nil)
 	registerCosmetologistResource.AddMethod(jsii.String("POST"), integration, nil)
+
+	assignCosmetologistResource := adminCosmetologistResource.AddResource(jsii.String("assign"), nil)
+	assignCosmetologistResource.AddMethod(jsii.String("POST"), integration, nil)
 
 	loginResource := apiRoot.AddResource(jsii.String("login"), nil)
 	loginResource.AddMethod(jsii.String("POST"), integration, nil)

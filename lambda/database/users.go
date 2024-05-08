@@ -10,29 +10,50 @@ import (
 )
 
 
-func (u DynamoDBClient) DoesUserExists(email string) (bool, error) {
-	result, err := u.databaseStore.Query(&dynamodb.QueryInput{
-			TableName: aws.String(USER_TABLE),
-			IndexName: aws.String("EmailIndex"),
-			KeyConditions: map[string]*dynamodb.Condition{
-					"email": {
-							ComparisonOperator: aws.String("EQ"),
-							AttributeValueList: []*dynamodb.AttributeValue{
-									{
-											S: aws.String(email),
+func (u DynamoDBClient) DoesUserExist(identifier, identifierType string) (bool, error) {
+	var queryInput *dynamodb.QueryInput
+
+	if identifierType == "email" {
+			queryInput = &dynamodb.QueryInput{
+					TableName: aws.String(USER_TABLE),
+					IndexName: aws.String("EmailIndex"),
+					KeyConditions: map[string]*dynamodb.Condition{
+							"email": {
+									ComparisonOperator: aws.String("EQ"),
+									AttributeValueList: []*dynamodb.AttributeValue{
+											{
+													S: aws.String(identifier),
+											},
 									},
 							},
 					},
-			},
-	})
+			}
+	} else if identifierType == "id" {
+			queryInput = &dynamodb.QueryInput{
+					TableName: aws.String(USER_TABLE),
+					KeyConditions: map[string]*dynamodb.Condition{
+							"id": {
+									ComparisonOperator: aws.String("EQ"),
+									AttributeValueList: []*dynamodb.AttributeValue{
+											{
+													S: aws.String(identifier),
+											},
+									},
+							},
+					},
+			}
+	} else {
+			return false, fmt.Errorf("invalid identifier type: %s", identifierType)
+	}
 
+	result, err := u.databaseStore.Query(queryInput)
 	if err != nil {
 			return false, err
 	}
 
-	// If Count is more than 0, the user exists
 	return *result.Count > 0, nil
 }
+
 
 func (u DynamoDBClient) InsertUser(user types.ClientUser) error {
 	item, err := dynamodbattribute.MarshalMap(user)
@@ -171,25 +192,50 @@ func (u DynamoDBClient) InsertCosmetologistUser(user types.CosmetologistUser) er
 	return nil
 }
 
-func (u DynamoDBClient) DoesCosmetologistUserExists(email string) (bool, error) {
-	result, err := u.databaseStore.Query(&dynamodb.QueryInput{
-		TableName: aws.String(COSMETOLOGIST_TABLE),
-		IndexName: aws.String("EmailIndex"),
-		KeyConditions: map[string]*dynamodb.Condition{
-				"email": {
-						ComparisonOperator: aws.String("EQ"),
-						AttributeValueList: []*dynamodb.AttributeValue{
-								{
-										S: aws.String(email),
-								},
-						},
-				},
-		},
-	})
+func (u DynamoDBClient) DoesCosmetologistExist(identifier, identifierType string) (bool, error) {
+	var queryInput *dynamodb.QueryInput
 
+	if identifierType == "email" {
+			// Query using the EmailIndex if the identifier is an email
+			queryInput = &dynamodb.QueryInput{
+					TableName: aws.String(COSMETOLOGIST_TABLE),
+					IndexName: aws.String("EmailIndex"),
+					KeyConditions: map[string]*dynamodb.Condition{
+							"email": {
+									ComparisonOperator: aws.String("EQ"),
+									AttributeValueList: []*dynamodb.AttributeValue{
+											{
+													S: aws.String(identifier),
+											},
+									},
+							},
+					},
+			}
+	} else if identifierType == "id" {
+			// Query using the primary key if the identifier is an ID
+			queryInput = &dynamodb.QueryInput{
+					TableName: aws.String(COSMETOLOGIST_TABLE),
+					KeyConditions: map[string]*dynamodb.Condition{
+							"id": {
+									ComparisonOperator: aws.String("EQ"),
+									AttributeValueList: []*dynamodb.AttributeValue{
+											{
+													S: aws.String(identifier),
+											},
+									},
+							},
+					},
+			}
+	} else {
+			return false, fmt.Errorf("invalid identifier type: %s", identifierType)
+	}
+
+	// Execute the query
+	result, err := u.databaseStore.Query(queryInput)
 	if err != nil {
 			return false, err
 	}
 
+	// Return true if any records are found
 	return *result.Count > 0, nil
 }

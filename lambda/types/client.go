@@ -17,4 +17,14 @@ type ClientUser struct {
 	Email string `json:"email"`
 	PasswordHash string `json:"password"`
 	Image string `json:"image"`
+	CosmetologistID string `json:"cosmetologistId"`
+}
+
+type ClientUserResponse struct {
+	Id string `json:"id"`
+	Firstname string `json:"firstname"`
+	Surname string `json:"surname"`
+	Email string `json:"email"`
+	Image *string `json:"image"`
+	CosmetologistID *string `json:"cosmetologistId"`
 }

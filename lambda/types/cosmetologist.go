@@ -18,3 +18,12 @@ type CosmetologistUser struct {
 	PasswordHash string `json:"password"`
 	Image string `json:"image"`
 }
+
+type CosmetologistUserSecure struct {
+	Id string `json:"id"`
+	Firstname string `json:"firstname"`
+	Surname string `json:"surname"`
+	Email string `json:"email"`
+	Image string `json:"image"`
+	Clients    []string `json:"clients"`
+}

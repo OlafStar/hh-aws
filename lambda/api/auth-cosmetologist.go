@@ -64,7 +64,7 @@ func (api APIHandler) RegisterCosmetologistHandler(request events.APIGatewayProx
 	}
 
 	//does exists 
-	userExists, err := api.dbStore.DoesCosmetologistUserExists(body.Email)
+	userExists, err := api.dbStore.DoesCosmetologistExist(body.Email, "email")
 
 	if err != nil {
 		return utils.CreateAPIGatewayProxyErrorResponse(http.StatusInternalServerError, "Internal server error"), fmt.Errorf("there an error checking id user exists %w", err)

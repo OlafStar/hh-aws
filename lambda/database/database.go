@@ -15,14 +15,19 @@ const (
 )
 
 type Store interface {
-	DoesUserExists(email string) (bool, error)
+	DoesUserExist(identifier, identifierType string) (bool, error)
 	GetUser(email string) (types.ClientUser, error)
 	GetAdminUser(email string) (types.User, error)
 	GetCosmetologistUser(email string) (types.CosmetologistUser, error)
-	DoesCosmetologistUserExists(email string) (bool, error)
+	DoesCosmetologistExist(identifier, identifierType string) (bool, error)
 	InsertUser(event types.ClientUser) error
 	InsertCosmetologistUser(event types.CosmetologistUser) error
 	InsertProduct(event types.Product) error
+	GetClients(page int64, limit int64) ([]types.ClientUserResponse, int64, int64, error)
+	CountClients() (int64, error)
+	GetCosmetologists(page int64, limit int64) ([]types.CosmetologistUserSecure, int64, int64, error)
+	CountCosmetologists() (int64, error)
+	AssignCosmetologistToClient(clientId, newCosmetologistId string) error
 }
 
 type DynamoDBClient struct {
