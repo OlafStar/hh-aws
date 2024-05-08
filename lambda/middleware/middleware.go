@@ -9,7 +9,7 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 )
 
-func extractTokenFromHeaders(headers map[string]string) string {
+func ExtractTokenFromHeaders(headers map[string]string) string {
 	authHeader, ok := headers["Authorization"]
 	if !ok {
 		return ""
@@ -24,7 +24,7 @@ func extractTokenFromHeaders(headers map[string]string) string {
 func ValidateJWTMiddleware(role jwt.Role) func(next func(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error)) func(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	return func(next func(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error)) func(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 		return func(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-			tokenString := extractTokenFromHeaders(request.Headers)
+			tokenString := ExtractTokenFromHeaders(request.Headers)
 			if tokenString == "" {
 				return events.APIGatewayProxyResponse{
 					Body:       "Missing auth token",

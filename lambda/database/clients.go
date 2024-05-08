@@ -9,6 +9,38 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 )
 
+func (u DynamoDBClient) GetClientIDByEmail(email string) (string, error) {
+	queryInput := &dynamodb.QueryInput{
+			TableName: aws.String(USER_TABLE),
+			IndexName: aws.String("EmailIndex"), 
+			KeyConditionExpression: aws.String("email = :email"),
+			ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+					":email": {S: aws.String(email)},
+			},
+			ProjectionExpression: aws.String("id"),
+			Limit: aws.Int64(1),
+	}
+
+	result, err := u.databaseStore.Query(queryInput)
+	if err != nil {
+			return "", fmt.Errorf("error querying client by email: %w", err)
+	}
+
+	if len(result.Items) == 0 {
+			return "", fmt.Errorf("no client found with the given email")
+	}
+
+	clientID := ""
+	if idAttr, ok := result.Items[0]["id"]; ok && idAttr.S != nil {
+			clientID = *idAttr.S
+	} else {
+			return "", fmt.Errorf("client ID not found in the query result")
+	}
+
+	return clientID, nil
+}
+
+
 func (client DynamoDBClient) GetClients(page int64, limit int64) ([]types.ClientUserResponse, int64, int64, error) {
 	queryInput := &dynamodb.ScanInput{
 		TableName: aws.String(USER_TABLE),

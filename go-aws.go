@@ -101,6 +101,22 @@ func NewGoAwsStack(scope constructs.Construct, id string, props *GoAwsStackProps
 		ProjectionType: awsdynamodb.ProjectionType_ALL,
 	})
 
+	initialPhotosTable := awsdynamodb.NewTable(stack, jsii.String("initialPhotosTable"), &awsdynamodb.TableProps{
+		PartitionKey: &awsdynamodb.Attribute{
+			Name: jsii.String("id"),
+			Type: awsdynamodb.AttributeType_STRING,
+		},
+		TableName: jsii.String("initialPhotosTable"),
+	})
+	initialPhotosTable.AddGlobalSecondaryIndex(&awsdynamodb.GlobalSecondaryIndexProps{
+		IndexName: jsii.String("ClientIdIndex"),
+		PartitionKey: &awsdynamodb.Attribute{
+			Name: jsii.String("clientId"),
+			Type: awsdynamodb.AttributeType_STRING,
+		},
+		ProjectionType: awsdynamodb.ProjectionType_ALL,
+	})
+
 	// awselasticache.NewCfnServerlessCache(stack, jsii.String("myElasticache"), &awselasticache.CfnServerlessCacheProps{
 	// 	Engine: jsii.String("redis"),
 	// 	ServerlessCacheName: jsii.String("myServerlessCache"),
@@ -116,6 +132,7 @@ func NewGoAwsStack(scope constructs.Construct, id string, props *GoAwsStackProps
 	cosmetologistUserTable.GrantReadWriteData(myFunction)
 	productsTable.GrantReadWriteData(myFunction)
 	resetTokensTable.GrantReadWriteData(myFunction)
+	initialPhotosTable.GrantReadWriteData(myFunction)
 
 	adminUserTable.GrantReadData(myFunction)
 
@@ -221,6 +238,11 @@ func NewGoAwsStack(scope constructs.Construct, id string, props *GoAwsStackProps
 
 	loginCosmetologistResource := cosmetologistResource.AddResource(jsii.String("login"), nil)
 	loginCosmetologistResource.AddMethod(jsii.String("POST"), integration, nil)
+
+	clientResource := apiRoot.AddResource(jsii.String("client"), nil)
+
+	initialPhotosResource := clientResource.AddResource(jsii.String("initial-photos"), nil)
+	initialPhotosResource.AddMethod(jsii.String("POST"), integration, nil)
 
 	loginAdminResource := adminResource.AddResource(jsii.String("login"), nil)
 	loginAdminResource.AddMethod(jsii.String("POST"), integration, nil)

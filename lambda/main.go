@@ -42,6 +42,8 @@ func main() {
 			return myApp.APIHandler.LoginAdminUser(request)
 		case "/cosmetologist/login":
 			return myApp.APIHandler.LoginCosmetologistUser(request)
+		case "/client/initial-photos":
+			return middleware.ValidateUserJWT(myApp.APIHandler.InitialPhotosOfClient)(request)
 		case "/protected-user":
 			return middleware.ValidateUserJWT(ProtectedRequest)(request)
 		case "/protected-cosmetologist":

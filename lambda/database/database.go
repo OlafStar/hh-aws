@@ -13,6 +13,7 @@ const (
 	COSMETOLOGIST_TABLE = "cosmetologistUserTable"
 	PRODUCTS_TABLE = "productsTable"
 	RESET_TOKENS_TABLE = "resetTokensTable"
+	INITIAL_PHOTOS_TABLE = "initialPhotosTable"
 )
 
 type Store interface {
@@ -34,6 +35,9 @@ type Store interface {
 	GetResetPassByToken(token string) (*ResetToken, error)
 	UpdateUserPassword(email, hashedPass string) error
 	ExpireResetToken(email string, token string) error
+	GetClientIDByEmail(email string) (string, error)
+	InsertInitialPhotos(userID string, photos []types.InitialPhotosStruct) error
+	HasUserSubmittedPhotos(userID string) (bool, error)
 }
 
 type DynamoDBClient struct {

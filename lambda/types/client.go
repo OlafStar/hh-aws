@@ -18,6 +18,7 @@ type ClientUser struct {
 	PasswordHash string `json:"password"`
 	Image string `json:"image"`
 	CosmetologistID string `json:"cosmetologistId"`
+	InitialPhotosID string `json:"initialPhotosId"`
 }
 
 type ClientUserResponse struct {
