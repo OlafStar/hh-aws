@@ -85,6 +85,22 @@ func NewGoAwsStack(scope constructs.Construct, id string, props *GoAwsStackProps
 		TableName: jsii.String("productsTable"),
 	})
 
+	resetTokensTable := awsdynamodb.NewTable(stack, jsii.String("resetTokensTable"), &awsdynamodb.TableProps{
+		PartitionKey: &awsdynamodb.Attribute{
+			Name: jsii.String("email"),
+			Type: awsdynamodb.AttributeType_STRING,
+		},
+		TableName: jsii.String("resetTokensTable"),
+	})
+	resetTokensTable.AddGlobalSecondaryIndex(&awsdynamodb.GlobalSecondaryIndexProps{
+		IndexName: jsii.String("TokenIndex"),
+		PartitionKey: &awsdynamodb.Attribute{
+			Name: jsii.String("token"),
+			Type: awsdynamodb.AttributeType_STRING,
+		},
+		ProjectionType: awsdynamodb.ProjectionType_ALL,
+	})
+
 	// awselasticache.NewCfnServerlessCache(stack, jsii.String("myElasticache"), &awselasticache.CfnServerlessCacheProps{
 	// 	Engine: jsii.String("redis"),
 	// 	ServerlessCacheName: jsii.String("myServerlessCache"),
@@ -99,6 +115,7 @@ func NewGoAwsStack(scope constructs.Construct, id string, props *GoAwsStackProps
 	userTable.GrantReadWriteData(myFunction)
 	cosmetologistUserTable.GrantReadWriteData(myFunction)
 	productsTable.GrantReadWriteData(myFunction)
+	resetTokensTable.GrantReadWriteData(myFunction)
 
 	adminUserTable.GrantReadData(myFunction)
 
@@ -164,6 +181,14 @@ func NewGoAwsStack(scope constructs.Construct, id string, props *GoAwsStackProps
 
 	// Initialize the root of the API
 	apiRoot := api.Root()
+
+	resetPassResource := apiRoot.AddResource(jsii.String("reset-password"), nil)
+
+	resetPassCreateResource := resetPassResource.AddResource(jsii.String("create"), nil)
+	resetPassCreateResource.AddMethod(jsii.String("POST"), integration, nil)
+
+	resetPassValidateResource := resetPassResource.AddResource(jsii.String("validate"), nil)
+	resetPassValidateResource.AddMethod(jsii.String("POST"), integration, nil)
 
 	registerResource := apiRoot.AddResource(jsii.String("register"), nil)
 	registerResource.AddMethod(jsii.String("POST"), integration, nil)

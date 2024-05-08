@@ -4,12 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"lambda-func/jwt"
+	"lambda-func/tokens"
 	"lambda-func/types"
 	"lambda-func/utils"
 	"net/http"
+	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func (api APIHandler) RegisterUserHandler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
@@ -103,5 +106,92 @@ func (api APIHandler) LoginUser(request events.APIGatewayProxyRequest) (events.A
 	return events.APIGatewayProxyResponse{
 		Body: successMsg,
 		StatusCode: http.StatusOK,
+	}, nil
+}
+
+func (api APIHandler) ResetPasswordUser(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	type Body struct {
+		Email string `json:"email"`
+	}
+
+	var body Body
+
+	err := json.Unmarshal([]byte(request.Body), &body)
+
+	if err != nil {
+		return utils.CreateAPIGatewayProxyErrorResponse(http.StatusBadRequest,"Invalid request"), err
+	}
+
+	resetToken, err := api.dbStore.GetResetPassTokenByEmail(body.Email)
+
+	if resetToken == nil {
+		token := tokens.CreateResetPassToken(body.Email)
+
+		if token == "" {
+			return utils.CreateAPIGatewayProxyErrorResponse(http.StatusInternalServerError,"Error with creating token"), err
+		}
+
+		//TODO: Implement email sending in the future
+		_, err = api.dbStore.CreateResetPassToken(body.Email, token)
+
+		if err != nil {
+			return utils.CreateAPIGatewayProxyErrorResponse(http.StatusInternalServerError,"Internal server error"), err
+		}
+	}
+
+	return events.APIGatewayProxyResponse{
+		Body: `{"message": "Success"}`,
+		StatusCode: http.StatusOK,
+	}, nil
+}
+
+func (api APIHandler) ResetPasswordUserValidate(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	token, tokenPresent := request.QueryStringParameters["token"]
+	if !tokenPresent || token == "" {
+			return utils.CreateAPIGatewayProxyErrorResponse(http.StatusBadRequest, "Token is required"), nil
+	}
+
+	var body struct {
+			Password string `json:"password"`
+	}
+	err := json.Unmarshal([]byte(request.Body), &body)
+	if err != nil {
+			return utils.CreateAPIGatewayProxyErrorResponse(http.StatusBadRequest, "Invalid request body"), err
+	}
+	if body.Password == "" {
+			return utils.CreateAPIGatewayProxyErrorResponse(http.StatusBadRequest, "Password is required"), nil
+	}
+
+	resetToken, err := api.dbStore.GetResetPassByToken(token)
+	if err != nil {
+			return utils.CreateAPIGatewayProxyErrorResponse(http.StatusInternalServerError, "Internal server error"), err
+	}
+	if resetToken == nil {
+			return utils.CreateAPIGatewayProxyErrorResponse(http.StatusNotFound, "No user associated with this token"), nil
+	}
+
+	currentTime := time.Now().Unix()
+	if currentTime > resetToken.Expires {
+			return utils.CreateAPIGatewayProxyErrorResponse(http.StatusBadRequest, "Token expired"), nil
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(body.Password), bcrypt.DefaultCost)
+	if err != nil {
+			return utils.CreateAPIGatewayProxyErrorResponse(http.StatusInternalServerError, "Failed to hash password"), err
+	}
+
+	err = api.dbStore.UpdateUserPassword(resetToken.Email, string(hashedPassword))
+	if err != nil {
+			return utils.CreateAPIGatewayProxyErrorResponse(http.StatusInternalServerError, "Failed to update password"), err
+	}
+
+	err = api.dbStore.ExpireResetToken(resetToken.Email, token)
+	if err != nil {
+			return utils.CreateAPIGatewayProxyErrorResponse(http.StatusInternalServerError, "Failed to expire reset token"), err
+	}
+
+	return events.APIGatewayProxyResponse{
+			Body:       `{"message": "Password reset successfully"}`,
+			StatusCode: http.StatusOK,
 	}, nil
 }

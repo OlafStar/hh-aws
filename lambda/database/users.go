@@ -196,7 +196,6 @@ func (u DynamoDBClient) DoesCosmetologistExist(identifier, identifierType string
 	var queryInput *dynamodb.QueryInput
 
 	if identifierType == "email" {
-			// Query using the EmailIndex if the identifier is an email
 			queryInput = &dynamodb.QueryInput{
 					TableName: aws.String(COSMETOLOGIST_TABLE),
 					IndexName: aws.String("EmailIndex"),
@@ -212,7 +211,6 @@ func (u DynamoDBClient) DoesCosmetologistExist(identifier, identifierType string
 					},
 			}
 	} else if identifierType == "id" {
-			// Query using the primary key if the identifier is an ID
 			queryInput = &dynamodb.QueryInput{
 					TableName: aws.String(COSMETOLOGIST_TABLE),
 					KeyConditions: map[string]*dynamodb.Condition{
@@ -230,12 +228,65 @@ func (u DynamoDBClient) DoesCosmetologistExist(identifier, identifierType string
 			return false, fmt.Errorf("invalid identifier type: %s", identifierType)
 	}
 
-	// Execute the query
 	result, err := u.databaseStore.Query(queryInput)
 	if err != nil {
 			return false, err
 	}
 
-	// Return true if any records are found
 	return *result.Count > 0, nil
+}
+
+func (u DynamoDBClient) FindClientIdByEmail(email string) (string, error) {
+	input := &dynamodb.QueryInput{
+			TableName: aws.String(USER_TABLE),
+			IndexName: aws.String("EmailIndex"),
+			KeyConditionExpression: aws.String("email = :e"),
+			ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+					":e": {
+							S: aws.String(email),
+					},
+			},
+	}
+
+	result, err := u.databaseStore.Query(input)
+	if err != nil {
+			return "", fmt.Errorf("failed to query user id by email: %v", err)
+	}
+	if result.Items == nil || len(result.Items) == 0 {
+			return "", fmt.Errorf("no user found with email %s", email)
+	}
+
+	id := result.Items[0]["id"].S
+	return *id, nil
+}
+
+func (u DynamoDBClient) UpdateUserPassword(email, hashedPassword string) error {
+	id, err := u.FindClientIdByEmail(email)
+
+	if err != nil {
+		return fmt.Errorf("failed to find user id: %v", err)
+	}	
+
+	input := &dynamodb.UpdateItemInput{
+			TableName: aws.String(USER_TABLE),
+			Key: map[string]*dynamodb.AttributeValue{
+					"id": {
+							S: aws.String(id),
+					},
+			},
+			UpdateExpression: aws.String("set password = :p"),
+			ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+					":p": {
+							S: aws.String(hashedPassword),
+					},
+			},
+			ReturnValues: aws.String("UPDATED_NEW"),
+	}
+
+	_, err = u.databaseStore.UpdateItem(input)
+	if err != nil {
+			return fmt.Errorf("failed to update user password: %v", err)
+	}
+
+	return nil
 }

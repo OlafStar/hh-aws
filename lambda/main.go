@@ -24,6 +24,10 @@ func main() {
 			return myApp.APIHandler.RegisterUserHandler(request)
 		case "/login":
 			return myApp.APIHandler.LoginUser(request)
+		case "/reset-password/create":
+			return myApp.APIHandler.ResetPasswordUser(request)
+		case "/reset-password/validate":
+			return myApp.APIHandler.ResetPasswordUserValidate(request)
 		case "/admin/clients":
 			return middleware.ValidateAdminJWT(myApp.APIHandler.GetClients)(request)
 		case "/admin/cosmetologists":

@@ -12,6 +12,7 @@ const (
 	ADMIN_TABLE = "adminUserTable"
 	COSMETOLOGIST_TABLE = "cosmetologistUserTable"
 	PRODUCTS_TABLE = "productsTable"
+	RESET_TOKENS_TABLE = "resetTokensTable"
 )
 
 type Store interface {
@@ -28,6 +29,11 @@ type Store interface {
 	GetCosmetologists(page int64, limit int64) ([]types.CosmetologistUserSecure, int64, int64, error)
 	CountCosmetologists() (int64, error)
 	AssignCosmetologistToClient(clientId, newCosmetologistId string) error
+	CreateResetPassToken(email, token string) (*ResetToken,error)
+	GetResetPassTokenByEmail(email string) (*ResetToken, error)
+	GetResetPassByToken(token string) (*ResetToken, error)
+	UpdateUserPassword(email, hashedPass string) error
+	ExpireResetToken(email string, token string) error
 }
 
 type DynamoDBClient struct {
