@@ -1,13 +1,32 @@
 package types
 
-type RegisterUser struct {
-	Email string `json:"email"`
-	Password string `json:"password"`
+type UserRegisterer interface {
+	GetEmail() string
+	GetPassword() string
 }
 
-type User struct {
-	Email string `json:"email"`
-	PasswordHash string `json:"password"`
+func (u RegisterUser) GetEmail() string {
+    return u.Email
+}
+
+func (u RegisterUser) GetPassword() string {
+    return u.Password
+}
+
+func (u ClientUserRegisterBody) GetEmail() string {
+    return u.Email
+}
+
+func (u ClientUserRegisterBody) GetPassword() string {
+    return u.Password
+}
+
+func (u CosmetologistUserRegisterBody) GetEmail() string {
+    return u.Email
+}
+
+func (u CosmetologistUserRegisterBody) GetPassword() string {
+    return u.Password
 }
 
 type Product struct {

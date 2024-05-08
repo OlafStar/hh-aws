@@ -16,12 +16,12 @@ const (
 
 type Store interface {
 	DoesUserExists(email string) (bool, error)
-	GetUser(email string) (types.User, error)
+	GetUser(email string) (types.ClientUser, error)
 	GetAdminUser(email string) (types.User, error)
-	GetCosmetologistUser(email string) (types.User, error)
+	GetCosmetologistUser(email string) (types.CosmetologistUser, error)
 	DoesCosmetologistUserExists(email string) (bool, error)
-	InsertUser(event types.User) error
-	InsertCosmetologistUser(event types.User) error
+	InsertUser(event types.ClientUser) error
+	InsertCosmetologistUser(event types.CosmetologistUser) error
 	InsertProduct(event types.Product) error
 }
 

@@ -29,15 +29,15 @@ var roleSecrets = map[Role]string{
 	RoleAdmin:         ADMIN_SECRET,
 }
 
-func NewUser(registerUser types.RegisterUser) (types.User, error){
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(registerUser.Password), 10)
+func NewUser(user types.UserRegisterer) (types.User, error) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.GetPassword()), 10)
 	if err != nil {
-		return types.User{}, err
+			return types.User{}, err
 	}
 
 	return types.User{
-		Email: registerUser.Email,
-		PasswordHash: string(hashedPassword),
+			Email: user.GetEmail(),
+			PasswordHash: string(hashedPassword),
 	}, nil
 }
 

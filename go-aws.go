@@ -28,26 +28,53 @@ func NewGoAwsStack(scope constructs.Construct, id string, props *GoAwsStackProps
 	//create db table here
 	userTable := awsdynamodb.NewTable(stack, jsii.String("userTable"), &awsdynamodb.TableProps{
 		PartitionKey: &awsdynamodb.Attribute{
-			Name: jsii.String("email"),
+			Name: jsii.String("id"),
 			Type: awsdynamodb.AttributeType_STRING,
 		},
 		TableName: jsii.String("userTable"),
 	})
 
-	cosmetologistUserTable := awsdynamodb.NewTable(stack, jsii.String("cosmetologistUserTable"), &awsdynamodb.TableProps{
+	userTable.AddGlobalSecondaryIndex(&awsdynamodb.GlobalSecondaryIndexProps{
+		IndexName: jsii.String("EmailIndex"),
 		PartitionKey: &awsdynamodb.Attribute{
 			Name: jsii.String("email"),
+			Type: awsdynamodb.AttributeType_STRING,
+		},
+		ProjectionType: awsdynamodb.ProjectionType_ALL,
+	})
+
+	cosmetologistUserTable := awsdynamodb.NewTable(stack, jsii.String("cosmetologistUserTable"), &awsdynamodb.TableProps{
+		PartitionKey: &awsdynamodb.Attribute{
+			Name: jsii.String("id"),
 			Type: awsdynamodb.AttributeType_STRING,
 		},
 		TableName: jsii.String("cosmetologistUserTable"),
 	})
 
-	adminUserTable := awsdynamodb.NewTable(stack, jsii.String("adminUserTable"), &awsdynamodb.TableProps{
+	cosmetologistUserTable.AddGlobalSecondaryIndex(&awsdynamodb.GlobalSecondaryIndexProps{
+		IndexName: jsii.String("EmailIndex"),
 		PartitionKey: &awsdynamodb.Attribute{
 			Name: jsii.String("email"),
 			Type: awsdynamodb.AttributeType_STRING,
 		},
+		ProjectionType: awsdynamodb.ProjectionType_ALL,
+	})
+
+	adminUserTable := awsdynamodb.NewTable(stack, jsii.String("adminUserTable"), &awsdynamodb.TableProps{
+		PartitionKey: &awsdynamodb.Attribute{
+			Name: jsii.String("id"),
+			Type: awsdynamodb.AttributeType_STRING,
+		},
 		TableName: jsii.String("adminUserTable"),
+	})
+
+	adminUserTable.AddGlobalSecondaryIndex(&awsdynamodb.GlobalSecondaryIndexProps{
+		IndexName: jsii.String("EmailIndex"),
+		PartitionKey: &awsdynamodb.Attribute{
+			Name: jsii.String("email"),
+			Type: awsdynamodb.AttributeType_STRING,
+		},
+		ProjectionType: awsdynamodb.ProjectionType_ALL,
 	})
 
 	productsTable := awsdynamodb.NewTable(stack, jsii.String("productsTable"), &awsdynamodb.TableProps{

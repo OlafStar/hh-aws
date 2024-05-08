@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/google/uuid"
 )
 
 func (api APIHandler) LoginCosmetologistUser(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
@@ -35,7 +36,7 @@ func (api APIHandler) LoginCosmetologistUser(request events.APIGatewayProxyReque
 		return utils.CreateAPIGatewayProxyErrorResponse(http.StatusBadRequest, "Invalid user credentials"), nil
 	}
 
-	accessToken, err := jwt.CreateToken(user, jwt.RoleCosmetologist)
+	accessToken, err := jwt.CreateToken(types.User{Email: user.Email, PasswordHash: user.PasswordHash}, jwt.RoleCosmetologist)
 
 	if err != nil {
 		return utils.CreateAPIGatewayProxyErrorResponse(http.StatusInternalServerError, "Internal server error"), err
@@ -50,20 +51,20 @@ func (api APIHandler) LoginCosmetologistUser(request events.APIGatewayProxyReque
 }
 
 func (api APIHandler) RegisterCosmetologistHandler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	var registerUser types.RegisterUser
+	var body types.CosmetologistUserRegisterBody
 
-	err := json.Unmarshal([]byte(request.Body), &registerUser)
+	err := json.Unmarshal([]byte(request.Body), &body)
 
 	if err != nil {
 		return utils.CreateAPIGatewayProxyErrorResponse(http.StatusBadRequest, "Invalid request"), err
 	}
 
-	if registerUser.Email == "" || registerUser.Password == "" {
-		return utils.CreateAPIGatewayProxyErrorResponse(http.StatusBadRequest, "Invalid request - empty parameters"), fmt.Errorf("request has empty parameters")
+	if err := body.Validate(); err != nil {
+		return utils.CreateAPIGatewayProxyErrorResponse(http.StatusBadRequest, fmt.Sprintf("Invalid request - %s", err.Error())), err
 	}
 
 	//does exists 
-	userExists, err := api.dbStore.DoesCosmetologistUserExists(registerUser.Email)
+	userExists, err := api.dbStore.DoesCosmetologistUserExists(body.Email)
 
 	if err != nil {
 		return utils.CreateAPIGatewayProxyErrorResponse(http.StatusInternalServerError, "Internal server error"), fmt.Errorf("there an error checking id user exists %w", err)
@@ -73,13 +74,26 @@ func (api APIHandler) RegisterCosmetologistHandler(request events.APIGatewayProx
 		return utils.CreateAPIGatewayProxyErrorResponse(http.StatusConflict, "User already exists"), fmt.Errorf("this user exists")
 	}
 
-	user, err := jwt.NewUser(registerUser)
+	user, err := jwt.NewUser(body)
 
 	if err != nil {
 		return utils.CreateAPIGatewayProxyErrorResponse(http.StatusInternalServerError, "Internal server error"), fmt.Errorf("could not create new user - %w", err)
 	}
 
-	err = api.dbStore.InsertCosmetologistUser(user)
+	newUUID, err := uuid.NewUUID()
+
+	if err != nil {
+		return utils.CreateAPIGatewayProxyErrorResponse(http.StatusInternalServerError, "Internal server error"), err
+	}
+
+	err = api.dbStore.InsertCosmetologistUser(types.CosmetologistUser{
+		Id: newUUID.String(),
+		Firstname: body.Firstname,
+		Surname: body.Surname,
+		Email: body.Email,
+		PasswordHash: user.PasswordHash,
+		Image: body.Image,
+	})
 
 	if err != nil {
 		return utils.CreateAPIGatewayProxyErrorResponse(http.StatusInternalServerError, "Internal server error"), fmt.Errorf("error registering user %w", err)
