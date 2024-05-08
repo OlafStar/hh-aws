@@ -26,6 +26,8 @@ func main() {
 			return myApp.APIHandler.LoginUser(request)
 		case "/admin/cosmetologist/register":
 			return middleware.ValidateAdminJWT(myApp.APIHandler.RegisterCosmetologistHandler)(request)
+		case "/admin/products/create":
+			return middleware.ValidateAdminJWT(myApp.APIHandler.CreateProduct)(request)
 		case "/admin/login":
 			return myApp.APIHandler.LoginAdminUser(request)
 		case "/cosmetologist/login":

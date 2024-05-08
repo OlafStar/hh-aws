@@ -50,6 +50,14 @@ func NewGoAwsStack(scope constructs.Construct, id string, props *GoAwsStackProps
 		TableName: jsii.String("adminUserTable"),
 	})
 
+	productsTable := awsdynamodb.NewTable(stack, jsii.String("productsTable"), &awsdynamodb.TableProps{
+		PartitionKey: &awsdynamodb.Attribute{
+			Name: jsii.String("id"),
+			Type: awsdynamodb.AttributeType_STRING,
+		},
+		TableName: jsii.String("productsTable"),
+	})
+
 	// cluster := awselasticache.NewCfnCacheCluster(stack, jsii.String("MyElastiCacheCluster"), &awselasticache.CfnCacheClusterProps{
 	// 	CacheNodeType: jsii.String("cache.t2.micro"),
 	// 	Engine:        jsii.String("redis"),
@@ -68,6 +76,8 @@ func NewGoAwsStack(scope constructs.Construct, id string, props *GoAwsStackProps
 
 	userTable.GrantReadWriteData(myFunction)
 	cosmetologistUserTable.GrantReadWriteData(myFunction)
+	productsTable.GrantReadWriteData(myFunction)
+
 	adminUserTable.GrantReadData(myFunction)
 
 	api := awsapigateway.NewRestApi(stack, jsii.String("myRESTApi"), &awsapigateway.RestApiProps{
@@ -133,39 +143,35 @@ func NewGoAwsStack(scope constructs.Construct, id string, props *GoAwsStackProps
 	// Initialize the root of the API
 	apiRoot := api.Root()
 
-	// Define 'register' resource at the root level
 	registerResource := apiRoot.AddResource(jsii.String("register"), nil)
 	registerResource.AddMethod(jsii.String("POST"), integration, nil)
 
-	// Define 'admin' as a sub-resource at the root level
 	adminResource := apiRoot.AddResource(jsii.String("admin"), nil)
 
-	// Define 'cosmetologist' as a sub-resource under 'admin'
 	adminCosmetologistResource := adminResource.AddResource(jsii.String("cosmetologist"), nil)
 
-	// Define 'register' as a sub-resource under 'admin/cosmetologist'
+	adminProductsResource := adminResource.AddResource(jsii.String("products"), nil)
+	
+	adminProductsCreateResource := adminProductsResource.AddResource(jsii.String("create"), nil)
+	adminProductsCreateResource.AddMethod(jsii.String("POST"), integration, nil)
+
 	registerCosmetologistResource := adminCosmetologistResource.AddResource(jsii.String("register"), nil)
 	registerCosmetologistResource.AddMethod(jsii.String("POST"), integration, nil)
 
-	// Define 'login' resource at the root level
 	loginResource := apiRoot.AddResource(jsii.String("login"), nil)
 	loginResource.AddMethod(jsii.String("POST"), integration, nil)
 
-	// Define 'cosmetologist/login' under 'cosmetologist'
 	cosmetologistResource := apiRoot.AddResource(jsii.String("cosmetologist"), nil)
 
 	loginCosmetologistResource := cosmetologistResource.AddResource(jsii.String("login"), nil)
 	loginCosmetologistResource.AddMethod(jsii.String("POST"), integration, nil)
 
-	// Define 'admin/login' under 'admin'
 	loginAdminResource := adminResource.AddResource(jsii.String("login"), nil)
 	loginAdminResource.AddMethod(jsii.String("POST"), integration, nil)
 
-	// Define 'protected-user' at the root level
 	protectedUserResource := apiRoot.AddResource(jsii.String("protected-user"), nil)
 	protectedUserResource.AddMethod(jsii.String("GET"), integration, nil)
 
-	// Define 'protected-cosmetologist' under 'cosmetologist'
 	protectedCosmetologistResource := apiRoot.AddResource(jsii.String("protected-cosmetologist"), nil)
 	protectedCosmetologistResource.AddMethod(jsii.String("GET"), integration, nil)
 

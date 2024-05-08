@@ -5,10 +5,10 @@ import (
 )
 
 type APIHandler struct {
-	dbStore database.UserStore
+	dbStore database.Store
 }
 
-func NewAPIHandler(dbStore database.UserStore) APIHandler {
+func NewAPIHandler(dbStore database.Store) APIHandler {
 	return APIHandler{
 		dbStore: dbStore,
 	}

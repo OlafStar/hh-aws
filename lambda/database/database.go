@@ -11,16 +11,18 @@ const (
 	USER_TABLE = "userTable"
 	ADMIN_TABLE = "adminUserTable"
 	COSMETOLOGIST_TABLE = "cosmetologistUserTable"
+	PRODUCTS_TABLE = "productsTable"
 )
 
-type UserStore interface {
+type Store interface {
 	DoesUserExists(email string) (bool, error)
-	InsertUser(event types.User) error
 	GetUser(email string) (types.User, error)
 	GetAdminUser(email string) (types.User, error)
 	GetCosmetologistUser(email string) (types.User, error)
 	DoesCosmetologistUserExists(email string) (bool, error)
+	InsertUser(event types.User) error
 	InsertCosmetologistUser(event types.User) error
+	InsertProduct(event types.Product) error
 }
 
 type DynamoDBClient struct {

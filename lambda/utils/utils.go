@@ -12,3 +12,10 @@ func CreateAPIGatewayProxyErrorResponse(statusCode int, message string) events.A
 			Body:       fmt.Sprintf(`{"message": "%s"}`, message),
 	}
 }
+
+func CreateAPIGatewayProxyResponse(statusCode int, message string) events.APIGatewayProxyResponse {
+	return events.APIGatewayProxyResponse{
+			StatusCode: statusCode,
+			Body:       fmt.Sprintf(`{"message": "%s"}`, message),
+	}
+}
